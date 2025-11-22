@@ -1,3 +1,14 @@
 <resources>
-    <string name="app_name">PhotoCatalog</string>
+    <string name="app_name">Photo Catalog</string>
+
+    <string name="label_confidence">Confidence: %s</string>
+    <string name="label_id">ID: %s</string>
+
+    <string name="cd_photo_image">Photo content</string>
+    <string name="cd_force_sync">Force Synchronization</string>
+    <string name="cd_favorite">Mark as Favorite</string>
+
+    <string name="status_offline_mode">Offline Mode - Showing Cached Data</string>
+
+    <string name="placeholder_large_image">Large Image Here</string>
 </resources>

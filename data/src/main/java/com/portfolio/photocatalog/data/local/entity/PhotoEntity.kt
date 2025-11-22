@@ -3,13 +3,15 @@ package com.portfolio.photocatalog.data.local.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.portfolio.photocatalog.domain.model.PhotoItem
+import com.portfolio.photocatalog.data.network.model.PhotoDto
 
 @Entity(tableName = "photos")
 data class PhotoEntity(
     @PrimaryKey val id: String,
     val text: String,
     val url: String,
-    val confidence: Float
+    val confidence: Float,
+    val isFavorite: Boolean = false
 )
 
 fun PhotoEntity.toDomain(): PhotoItem {
@@ -17,15 +19,17 @@ fun PhotoEntity.toDomain(): PhotoItem {
         id = id,
         description = text,
         imageUrl = url,
-        confidence = confidence
+        confidence = confidence,
+        isFavorite = isFavorite
     )
 }
 
-fun com.portfolio.photocatalog.data.network.model.PhotoDto.toEntity(): PhotoEntity {
+fun PhotoDto.toEntity(): PhotoEntity {
     return PhotoEntity(
         id = id,
         text = text ?: "",
         url = url ?: "",
-        confidence = confidence ?: 0.0f
+        confidence = confidence ?: 0.0f,
+        isFavorite = false
     )
 }
