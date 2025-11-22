@@ -38,6 +38,12 @@ class CatalogRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getPhotoDetail(photoId: String): Flow<PhotoItem?> {
+        return database.photoDao().getPhotoById(photoId).map { entity ->
+            entity?.toDomain()
+        }
+    }
+
     companion object {
         private const val ITEMS_PER_PAGE = 10
     }

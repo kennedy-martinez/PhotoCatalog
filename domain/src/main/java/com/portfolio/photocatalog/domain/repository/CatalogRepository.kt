@@ -7,4 +7,6 @@ import kotlinx.coroutines.flow.Flow
 interface CatalogRepository {
 
     fun getPhotoStream(): Flow<PagingData<PhotoItem>>
+
+    fun getPhotoDetail(photoId: String): Flow<PhotoItem?>
 }

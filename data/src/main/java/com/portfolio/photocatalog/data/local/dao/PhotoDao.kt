@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.portfolio.photocatalog.data.local.entity.PhotoEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PhotoDao {
@@ -15,6 +16,9 @@ interface PhotoDao {
 
     @Query("SELECT * FROM photos")
     fun getPhotos(): PagingSource<Int, PhotoEntity>
+
+    @Query("SELECT * FROM photos WHERE id = :photoId")
+    fun getPhotoById(photoId: String): Flow<PhotoEntity?>
 
     @Query("DELETE FROM photos")
     suspend fun clearAll()
