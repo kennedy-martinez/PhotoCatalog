@@ -13,6 +13,7 @@ val localFile = rootProject.file("local.properties")
 if (localFile.exists()) {
     localProperties.load(FileInputStream(localFile))
 }
+val apiKey = localProperties.getProperty("API_KEY") ?: ""
 android {
     namespace = "com.portfolio.photocatalog.data"
     compileSdk = 36
@@ -22,6 +23,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
+        buildConfigField("String", "API_KEY", "\"$apiKey\"")
     }
 
     buildTypes {
@@ -40,6 +42,9 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 dependencies {
@@ -50,8 +55,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-
-    implementation(project(":domain"))
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
@@ -68,4 +71,6 @@ dependencies {
 
     implementation(libs.androidx.paging.runtime)
     implementation(libs.timber)
+
+    implementation(project(":domain"))
 }
