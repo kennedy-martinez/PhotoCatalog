@@ -44,6 +44,10 @@ class CatalogRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun toggleFavorite(photoId: String, isFavorite: Boolean) {
+        database.photoDao().updateFavoriteStatus(photoId, isFavorite)
+    }
+
     companion object {
         private const val ITEMS_PER_PAGE = 10
     }

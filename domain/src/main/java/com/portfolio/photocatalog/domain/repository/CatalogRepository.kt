@@ -9,4 +9,6 @@ interface CatalogRepository {
     fun getPhotoStream(): Flow<PagingData<PhotoItem>>
 
     fun getPhotoDetail(photoId: String): Flow<PhotoItem?>
+
+    suspend fun toggleFavorite(photoId: String, isFavorite: Boolean)
 }

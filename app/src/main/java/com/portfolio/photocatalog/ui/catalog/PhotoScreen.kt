@@ -66,7 +66,7 @@ fun PhotoScreen(
             PhotoList(
                 photos = photos,
                 onPhotoClick = onPhotoClick,
-                onToggleFavorite = { }
+                onToggleFavorite = viewModel::onToggleFavorite
             )
 
             if (photos.loadState.refresh is LoadState.Loading) {
