@@ -31,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,22 +43,33 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
+import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import com.portfolio.photocatalog.R
 import com.portfolio.photocatalog.domain.model.PhotoItem
 import com.portfolio.photocatalog.ui.theme.PhotoCatalogTheme
+import kotlinx.coroutines.flow.flowOf
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhotoScreen(
     onPhotoClick: (String) -> Unit
 ) {
     val viewModel: CatalogViewModel = hiltViewModel()
     val photos = viewModel.photoPagingFlow.collectAsLazyPagingItems()
+    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
 
-    Scaffold { paddingValues ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.app_name)) }
+            )
+        }
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -72,6 +84,13 @@ fun PhotoScreen(
             if (photos.loadState.refresh is LoadState.Loading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
+
+            if (isOffline) {
+                OfflineBanner(
+                    onRefreshClick = { photos.refresh() },
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
+            }
         }
     }
 }
@@ -83,7 +102,7 @@ private fun PhotoList(
     onToggleFavorite: (PhotoItem) -> Unit
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(bottom = 80.dp, top = 16.dp, start = 16.dp, end = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(count = photos.itemCount) { index ->
@@ -174,6 +193,40 @@ private fun PhotoItemCard(
     }
 }
 
+@Composable
+private fun OfflineBanner(
+    onRefreshClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.error,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = stringResource(R.string.status_offline_mode),
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.weight(1f)
+            )
+
+            IconButton(onClick = onRefreshClick) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = stringResource(R.string.cd_force_sync),
+                    tint = Color.White
+                )
+            }
+        }
+    }
+}
+
 private val DUMMY_PHOTO = PhotoItem(
     id = "101",
     description = "Mountain Landscape",
@@ -207,7 +260,7 @@ fun PhotoItemCardFavPreview() {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview(showBackground = true, name = "3. Full List Visual Check")
+@Preview(showBackground = true, name = "3. Full List with Offline Banner")
 @Composable
 fun PhotoListPreview() {
     val fakePhotos = listOf(
@@ -216,26 +269,23 @@ fun PhotoListPreview() {
         DUMMY_PHOTO.copy(id = "103", description = "Urban Street Photography"),
         DUMMY_PHOTO.copy(id = "104", description = "Abstract Art", confidence = 0.5f),
         DUMMY_PHOTO_FAV.copy(id = "105", description = "Family Portrait"),
-        DUMMY_PHOTO.copy(id = "106", description = "Another Photo"),
-        DUMMY_PHOTO.copy(id = "107", description = "Yet Another Photo")
+        DUMMY_PHOTO.copy(id = "106", description = "Another Photo")
     )
+
+    val flow = flowOf(PagingData.from(fakePhotos))
+    val lazyPagingItems = flow.collectAsLazyPagingItems()
 
     PhotoCatalogTheme {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text(stringResource(R.string.app_name)) },
-                    actions = {
-                        IconButton(onClick = {}) {
-                            Icon(Icons.Default.Refresh, contentDescription = null)
-                        }
-                    }
+                    title = { Text(stringResource(R.string.app_name)) }
                 )
             }
         ) { padding ->
             Box(modifier = Modifier.padding(padding)) {
                 LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(bottom = 80.dp, top = 16.dp, start = 16.dp, end = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(fakePhotos.size) { index ->
@@ -247,20 +297,10 @@ fun PhotoListPreview() {
                     }
                 }
 
-                Surface(
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
-                ) {
-                    Text(
-                        text = stringResource(R.string.status_offline_mode),
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(4.dp),
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
+                OfflineBanner(
+                    onRefreshClick = {},
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
             }
         }
     }
