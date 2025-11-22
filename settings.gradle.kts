@@ -21,3 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "PhotoCatalog"
 include(":app")
+include(":domain")
+include(":data")
