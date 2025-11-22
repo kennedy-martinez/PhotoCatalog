@@ -1,6 +1,7 @@
 package com.portfolio.photocatalog.ui.catalog
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,33 +37,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
-import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import com.portfolio.photocatalog.R
 import com.portfolio.photocatalog.domain.model.PhotoItem
 import com.portfolio.photocatalog.ui.theme.PhotoCatalogTheme
-import kotlinx.coroutines.flow.flowOf
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PhotoScreen() {
+fun PhotoScreen(
+    onPhotoClick: (String) -> Unit
+) {
     val viewModel: CatalogViewModel = hiltViewModel()
     val photos = viewModel.photoPagingFlow.collectAsLazyPagingItems()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) }
-            )
-        }
-    ) { paddingValues ->
+    Scaffold { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -70,15 +65,13 @@ fun PhotoScreen() {
         ) {
             PhotoList(
                 photos = photos,
+                onPhotoClick = onPhotoClick,
                 onToggleFavorite = { }
             )
 
             if (photos.loadState.refresh is LoadState.Loading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
-
-            // Aquí iría la lógica para mostrar el OfflineBanner real basándose en el estado de red
-            // Lo implementaremos en la Etapa 10.
         }
     }
 }
@@ -86,6 +79,7 @@ fun PhotoScreen() {
 @Composable
 private fun PhotoList(
     photos: LazyPagingItems<PhotoItem>,
+    onPhotoClick: (String) -> Unit,
     onToggleFavorite: (PhotoItem) -> Unit
 ) {
     LazyColumn(
@@ -95,7 +89,11 @@ private fun PhotoList(
         items(count = photos.itemCount) { index ->
             val item = photos[index]
             if (item != null) {
-                PhotoItemCard(item = item, onToggleFavorite = onToggleFavorite)
+                PhotoItemCard(
+                    item = item,
+                    onPhotoClick = onPhotoClick,
+                    onToggleFavorite = onToggleFavorite
+                )
             }
         }
 
@@ -117,10 +115,13 @@ private fun PhotoList(
 @Composable
 private fun PhotoItemCard(
     item: PhotoItem,
+    onPhotoClick: (String) -> Unit,
     onToggleFavorite: (PhotoItem) -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onPhotoClick(item.id) },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
@@ -173,44 +174,6 @@ private fun PhotoItemCard(
     }
 }
 
-@Composable
-private fun OfflineBanner(
-    onRefreshClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.error,
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = stringResource(R.string.status_offline_mode),
-                color = Color.White,
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.weight(1f)
-            )
-
-            IconButton(onClick = onRefreshClick) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = stringResource(R.string.cd_force_sync),
-                    tint = Color.White
-                )
-            }
-        }
-    }
-}
-
-// ==========================================
-// PREVIEWS
-// ==========================================
-
 private val DUMMY_PHOTO = PhotoItem(
     id = "101",
     description = "Mountain Landscape",
@@ -231,7 +194,7 @@ private val DUMMY_PHOTO_FAV = PhotoItem(
 @Composable
 fun PhotoItemCardPreview() {
     PhotoCatalogTheme {
-        PhotoItemCard(item = DUMMY_PHOTO, onToggleFavorite = {})
+        PhotoItemCard(item = DUMMY_PHOTO, onPhotoClick = {}, onToggleFavorite = {})
     }
 }
 
@@ -239,12 +202,12 @@ fun PhotoItemCardPreview() {
 @Composable
 fun PhotoItemCardFavPreview() {
     PhotoCatalogTheme {
-        PhotoItemCard(item = DUMMY_PHOTO_FAV, onToggleFavorite = {})
+        PhotoItemCard(item = DUMMY_PHOTO_FAV, onPhotoClick = {}, onToggleFavorite = {})
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview(showBackground = true, name = "3. Full List with Offline Banner")
+@Preview(showBackground = true, name = "3. Full List Visual Check")
 @Composable
 fun PhotoListPreview() {
     val fakePhotos = listOf(
@@ -253,34 +216,51 @@ fun PhotoListPreview() {
         DUMMY_PHOTO.copy(id = "103", description = "Urban Street Photography"),
         DUMMY_PHOTO.copy(id = "104", description = "Abstract Art", confidence = 0.5f),
         DUMMY_PHOTO_FAV.copy(id = "105", description = "Family Portrait"),
-        DUMMY_PHOTO.copy(id = "106", description = "Another Photo")
+        DUMMY_PHOTO.copy(id = "106", description = "Another Photo"),
+        DUMMY_PHOTO.copy(id = "107", description = "Yet Another Photo")
     )
 
     PhotoCatalogTheme {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text(stringResource(R.string.app_name)) }
+                    title = { Text(stringResource(R.string.app_name)) },
+                    actions = {
+                        IconButton(onClick = {}) {
+                            Icon(Icons.Default.Refresh, contentDescription = null)
+                        }
+                    }
                 )
             }
         ) { padding ->
             Box(modifier = Modifier.padding(padding)) {
                 LazyColumn(
-                    contentPadding = PaddingValues(bottom = 60.dp, top = 16.dp, start = 16.dp, end = 16.dp),
+                    contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(fakePhotos.size) { index ->
                         PhotoItemCard(
                             item = fakePhotos[index],
+                            onPhotoClick = {},
                             onToggleFavorite = {}
                         )
                     }
                 }
 
-                OfflineBanner(
-                    onRefreshClick = {},
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
+                Surface(
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                ) {
+                    Text(
+                        text = stringResource(R.string.status_offline_mode),
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(4.dp),
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
             }
         }
     }
