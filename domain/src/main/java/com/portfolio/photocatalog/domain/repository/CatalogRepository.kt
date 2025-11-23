@@ -11,4 +11,6 @@ interface CatalogRepository {
     fun getPhotoDetail(photoId: String): Flow<PhotoItem?>
 
     suspend fun toggleFavorite(photoId: String, isFavorite: Boolean)
+
+    suspend fun refreshAllContent(): Result<Unit>
 }

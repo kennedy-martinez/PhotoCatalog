@@ -5,9 +5,13 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
+import androidx.room.withTransaction
 import com.portfolio.photocatalog.data.local.AppDatabase
+import com.portfolio.photocatalog.data.local.PreferenceStorage
 import com.portfolio.photocatalog.data.local.entity.toDomain
+import com.portfolio.photocatalog.data.local.entity.toEntity
 import com.portfolio.photocatalog.data.network.ApiService
+import com.portfolio.photocatalog.data.network.model.PhotoDto
 import com.portfolio.photocatalog.domain.model.PhotoItem
 import com.portfolio.photocatalog.domain.repository.CatalogRepository
 import kotlinx.coroutines.flow.Flow
@@ -16,7 +20,8 @@ import javax.inject.Inject
 
 class CatalogRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
-    private val database: AppDatabase
+    private val database: AppDatabase,
+    private val preferenceStorage: PreferenceStorage
 ) : CatalogRepository {
 
     @OptIn(ExperimentalPagingApi::class)
@@ -46,6 +51,37 @@ class CatalogRepositoryImpl @Inject constructor(
 
     override suspend fun toggleFavorite(photoId: String, isFavorite: Boolean) {
         database.photoDao().updateFavoriteStatus(photoId, isFavorite)
+    }
+
+    override suspend fun refreshAllContent(): Result<Unit> {
+        return try {
+            var currentMaxId: String? = null
+            var hasMoreData = true
+            val allPhotos = mutableListOf<PhotoDto>()
+
+            while (hasMoreData) {
+                val response = apiService.getPhotos(maxId = currentMaxId)
+                if (response.isNotEmpty()) {
+                    allPhotos.addAll(response)
+                    currentMaxId = response.last().id
+                    if (response.size < 10) hasMoreData = false
+                } else {
+                    hasMoreData = false
+                }
+            }
+
+            if (allPhotos.isNotEmpty()) {
+                database.withTransaction {
+                    database.photoDao().clearAll()
+                    database.photoDao().insertAll(allPhotos.map { it.toEntity() })
+                }
+                preferenceStorage.updateLastSyncTime(System.currentTimeMillis())
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     companion object {

@@ -11,4 +11,8 @@
     <string name="status_offline_mode">Offline Mode - Showing Cached Data</string>
 
     <string name="placeholder_large_image">Large Image Here</string>
+
+    <string name="status_updated_just_now">Updated just now</string>
+    <string name="status_online_format">Last update: %1$d min ago. Next auto-sync in: %2$d min</string>
+    <string name="status_offline_format">Offline Mode. Data might be outdated. Last update: %s</string>
 </resources>
