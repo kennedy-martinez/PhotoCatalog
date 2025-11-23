@@ -19,6 +19,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,6 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -62,6 +65,7 @@ fun PhotoScreen(
     val photos = viewModel.photoPagingFlow.collectAsLazyPagingItems()
     val bannerState by viewModel.bannerState.collectAsStateWithLifecycle()
 
+    val pullRefreshState = rememberPullToRefreshState()
     val isRefreshing = photos.loadState.refresh is LoadState.Loading
 
     Scaffold(
@@ -71,51 +75,107 @@ fun PhotoScreen(
             )
         }
     ) { paddingValues ->
-
-           PullToRefreshBox(
+        PullToRefreshBox(
             isRefreshing = isRefreshing,
+            state = pullRefreshState,
             onRefresh = { photos.refresh() },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            Box(modifier = Modifier.fillMaxSize()) {
 
-            PhotoList(
-                photos = photos,
-                onPhotoClick = onPhotoClick,
-                onToggleFavorite = viewModel::onToggleFavorite
-            )
-
-           when (val state = bannerState) {
-                is BannerUiState.Hidden -> { }
-                is BannerUiState.Offline -> {
-                    StatusBanner(
-                        message = stringResource(R.string.status_offline_format, state.lastUpdateDate),
-                        color = MaterialTheme.colorScheme.error,
-                        showButton = true,
-                        onButtonClick = viewModel::forceSync,
-                        modifier = Modifier.align(Alignment.BottomCenter)
+                if (photos.itemCount > 0) {
+                    PhotoList(
+                        photos = photos,
+                        onPhotoClick = onPhotoClick,
+                        onToggleFavorite = viewModel::onToggleFavorite
                     )
                 }
-                is BannerUiState.Online -> {
-                    StatusBanner(
-                        message = stringResource(R.string.status_online_format, state.lastUpdateMin, state.nextUpdateMin),
-                        color = Color(0xFFFFA000),
-                        showButton = true,
-                        onButtonClick = viewModel::forceSync,
-                        modifier = Modifier.align(Alignment.BottomCenter)
+
+                if (photos.loadState.refresh is LoadState.Loading && photos.itemCount == 0) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+
+                if (photos.loadState.refresh is LoadState.Error && photos.itemCount == 0) {
+                    val error = (photos.loadState.refresh as LoadState.Error).error
+                    ErrorMessage(
+                        message = "Error loading data: ${error.localizedMessage ?: "Unknown error"}",
+                        onRetry = { photos.retry() },
+                        modifier = Modifier.align(Alignment.Center)
                     )
                 }
-                is BannerUiState.Updated -> {
-                    StatusBanner(
-                        message = stringResource(R.string.status_updated_just_now),
-                        color = Color(0xFF4CAF50),
-                        showButton = false,
-                        onButtonClick = {},
-                        modifier = Modifier.align(Alignment.BottomCenter)
-                    )
+
+                when (val state = bannerState) {
+                    is BannerUiState.Hidden -> {}
+                    is BannerUiState.Offline -> {
+                        StatusBanner(
+                            message = stringResource(
+                                R.string.status_offline_format,
+                                state.lastUpdateDate
+                            ),
+                            color = MaterialTheme.colorScheme.error,
+                            showButton = true,
+                            onButtonClick = viewModel::forceSync,
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        )
+                    }
+
+                    is BannerUiState.Online -> {
+                        StatusBanner(
+                            message = stringResource(
+                                R.string.status_online_format,
+                                state.lastUpdateMin,
+                                state.nextUpdateMin
+                            ),
+                            color = Color(0xFFFFA000),
+                            showButton = true,
+                            onButtonClick = viewModel::forceSync,
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        )
+                    }
+
+                    is BannerUiState.Updated -> {
+                        StatusBanner(
+                            message = stringResource(R.string.status_updated_just_now),
+                            color = Color(0xFF4CAF50),
+                            showButton = false,
+                            onButtonClick = {},
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ErrorMessage(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Warning,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = onRetry) {
+            Text("Retry")
         }
     }
 }
@@ -259,6 +319,7 @@ private fun PhotoItemCard(
         }
     }
 }
+
 private val DUMMY_PHOTO = PhotoItem(
     id = "101",
     description = "Mountain Landscape",
@@ -267,27 +328,22 @@ private val DUMMY_PHOTO = PhotoItem(
     isFavorite = false
 )
 
-private val DUMMY_PHOTO_FAV = PhotoItem(
-    id = "102",
-    description = "Cute Cat (Favorite)",
-    imageUrl = "",
-    confidence = 0.99f,
-    isFavorite = true
-)
+@Preview(showBackground = true, name = "Error State")
+@Composable
+fun ErrorStatePreview() {
+    PhotoCatalogTheme {
+        ErrorMessage(
+            message = "HTTP 401 Unauthorized",
+            onRetry = {}
+        )
+    }
+}
 
-@Preview(showBackground = true, name = "1. Card Item (Normal)")
+@Preview(showBackground = true, name = "Card Item")
 @Composable
 fun PhotoItemCardPreview() {
     PhotoCatalogTheme {
         PhotoItemCard(item = DUMMY_PHOTO, onPhotoClick = {}, onToggleFavorite = {})
-    }
-}
-
-@Preview(showBackground = true, name = "2. Card Item (Favorite)")
-@Composable
-fun PhotoItemCardFavPreview() {
-    PhotoCatalogTheme {
-        PhotoItemCard(item = DUMMY_PHOTO_FAV, onPhotoClick = {}, onToggleFavorite = {})
     }
 }
 
@@ -297,7 +353,6 @@ fun PhotoItemCardFavPreview() {
 fun PhotoListPreview() {
     val fakePhotos = listOf(
         DUMMY_PHOTO,
-        DUMMY_PHOTO_FAV,
         DUMMY_PHOTO.copy(id = "103", description = "Urban Street"),
         DUMMY_PHOTO.copy(id = "104", description = "Abstract Art")
     )
@@ -312,7 +367,12 @@ fun PhotoListPreview() {
         ) { padding ->
             Box(modifier = Modifier.padding(padding)) {
                 LazyColumn(
-                    contentPadding = PaddingValues(bottom = 80.dp, top = 16.dp, start = 16.dp, end = 16.dp),
+                    contentPadding = PaddingValues(
+                        bottom = 80.dp,
+                        top = 16.dp,
+                        start = 16.dp,
+                        end = 16.dp
+                    ),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(fakePhotos.size) { index ->
