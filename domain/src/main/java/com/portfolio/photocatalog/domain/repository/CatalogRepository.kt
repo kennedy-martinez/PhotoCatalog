@@ -2,6 +2,7 @@ package com.portfolio.photocatalog.domain.repository
 
 import androidx.paging.PagingData
 import com.portfolio.photocatalog.domain.model.PhotoItem
+import com.portfolio.photocatalog.domain.util.Result
 import kotlinx.coroutines.flow.Flow
 
 interface CatalogRepository {

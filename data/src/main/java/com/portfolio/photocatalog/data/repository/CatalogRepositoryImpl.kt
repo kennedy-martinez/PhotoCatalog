@@ -14,6 +14,7 @@ import com.portfolio.photocatalog.data.network.ApiService
 import com.portfolio.photocatalog.data.network.model.PhotoDto
 import com.portfolio.photocatalog.domain.model.PhotoItem
 import com.portfolio.photocatalog.domain.repository.CatalogRepository
+import com.portfolio.photocatalog.domain.util.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -72,15 +73,27 @@ class CatalogRepositoryImpl @Inject constructor(
 
             if (allPhotos.isNotEmpty()) {
                 database.withTransaction {
+                    val favoriteIds = database.photoDao().getFavoriteIds().toSet()
+
                     database.photoDao().clearAll()
-                    database.photoDao().insertAll(allPhotos.map { it.toEntity() })
+
+                    val entities = allPhotos.map { dto ->
+                        val entity = dto.toEntity()
+                        if (favoriteIds.contains(entity.id)) {
+                            entity.copy(isFavorite = true)
+                        } else {
+                            entity
+                        }
+                    }
+
+                    database.photoDao().insertAll(entities)
                 }
                 preferenceStorage.updateLastSyncTime(System.currentTimeMillis())
             }
 
-            Result.success(Unit)
+            Result.Success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.Error(e)
         }
     }
 
