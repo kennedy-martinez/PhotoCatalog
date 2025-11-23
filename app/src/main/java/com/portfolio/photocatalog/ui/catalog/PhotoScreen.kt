@@ -151,7 +151,7 @@ fun PhotoScreen(
 }
 
 @Composable
-private fun ErrorMessage(
+fun ErrorMessage(
     message: String,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
@@ -181,7 +181,7 @@ private fun ErrorMessage(
 }
 
 @Composable
-private fun StatusBanner(
+fun StatusBanner(
     message: String,
     color: Color,
     showButton: Boolean,
@@ -223,7 +223,7 @@ private fun StatusBanner(
 }
 
 @Composable
-private fun PhotoList(
+fun PhotoList(
     photos: LazyPagingItems<PhotoItem>,
     onPhotoClick: (String) -> Unit,
     onToggleFavorite: (PhotoItem) -> Unit
@@ -259,7 +259,7 @@ private fun PhotoList(
 }
 
 @Composable
-private fun PhotoItemCard(
+fun PhotoItemCard(
     item: PhotoItem,
     onPhotoClick: (String) -> Unit,
     onToggleFavorite: (PhotoItem) -> Unit
