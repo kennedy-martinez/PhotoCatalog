@@ -137,7 +137,8 @@ class PhotoComponentsTest {
                 PhotoDetailContent(
                     item = detailItem,
                     onToggleFavorite = {},
-                    onImageClick = {}
+                    onImageClick = {},
+                    onBackClick = {}
                 )
             }
         }

@@ -54,7 +54,6 @@ import com.portfolio.photocatalog.R
 import com.portfolio.photocatalog.domain.model.PhotoItem
 import com.portfolio.photocatalog.ui.theme.PhotoCatalogTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
     onBackClick: () -> Unit
@@ -62,6 +61,33 @@ fun DetailScreen(
     val viewModel: DetailViewModel = hiltViewModel()
     val photo by viewModel.photoState.collectAsStateWithLifecycle()
 
+    // El estado del zoom lo movemos dentro del contenido para simplificar
+    // o lo dejamos aquí si quisiéramos controlarlo desde fuera.
+    // Para seguir el patrón del test, lo dejaremos que se gestione dentro o via callback.
+    // En este diseño final, PhotoDetailContent gestiona el layout completo.
+
+    if (photo != null) {
+        PhotoDetailContent(
+            item = photo!!,
+            onBackClick = onBackClick,
+            onToggleFavorite = viewModel::onToggleFavorite,
+            onImageClick = { /* Si quisiéramos sacar el estado fuera, lo usaríamos */ }
+        )
+    } else {
+        Box(modifier = Modifier.fillMaxSize()) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PhotoDetailContent(
+    item: PhotoItem,
+    onBackClick: () -> Unit,
+    onToggleFavorite: (PhotoItem) -> Unit,
+    onImageClick: () -> Unit = {}
+) {
     var showFullScreen by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -84,86 +110,71 @@ fun DetailScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            val item = photo
-            if (item != null) {
-                PhotoDetailContent(
-                    item = item,
-                    onToggleFavorite = viewModel::onToggleFavorite,
-                    onImageClick = { showFullScreen = true }
-                )
-
-                if (showFullScreen) {
-                    ZoomableImageDialog(
-                        imageUrl = item.imageUrl,
-                        onDismiss = { showFullScreen = false }
-                    )
-                }
-            } else {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            }
-        }
-    }
-}
-
-@Composable
-fun PhotoDetailContent(
-    item: PhotoItem,
-    onToggleFavorite: (PhotoItem) -> Unit,
-    onImageClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-    ) {
-        AsyncImage(
-            model = item.imageUrl,
-            contentDescription = stringResource(R.string.cd_photo_image),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .background(Color.LightGray)
-                .clickable { onImageClick() },
-            contentScale = ContentScale.Crop
-        )
-
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
             ) {
-                Text(
-                    text = item.description,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.weight(1f)
+                AsyncImage(
+                    model = item.imageUrl,
+                    contentDescription = stringResource(R.string.cd_photo_image),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .background(Color.LightGray)
+                        .clickable {
+                            showFullScreen = true
+                            onImageClick()
+                        },
+                    contentScale = ContentScale.Crop
                 )
 
-                IconButton(onClick = { onToggleFavorite(item) }) {
-                    Icon(
-                        imageVector = if (item.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = stringResource(R.string.cd_favorite),
-                        tint = if (item.isFavorite) Color.Red else Color.Gray
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text(
+                            text = item.description,
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        IconButton(onClick = { onToggleFavorite(item) }) {
+                            Icon(
+                                imageVector = if (item.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = stringResource(R.string.cd_favorite),
+                                tint = if (item.isFavorite) Color.Red else Color.Gray
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = stringResource(R.string.label_confidence, item.confidence),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = stringResource(R.string.label_id, item.id),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.Gray
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = stringResource(R.string.label_confidence, item.confidence),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = stringResource(R.string.label_id, item.id),
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.Gray
-            )
+            if (showFullScreen) {
+                ZoomableImageDialog(
+                    imageUrl = item.imageUrl,
+                    onDismiss = { showFullScreen = false }
+                )
+            }
         }
     }
 }
@@ -237,7 +248,7 @@ fun ZoomableImageDialog(
 
 private val DUMMY_DETAIL = PhotoItem(
     id = "101",
-    description = "Detailed view of a beautiful mountain landscape.",
+    description = "Detailed view",
     imageUrl = "",
     confidence = 0.98f,
     isFavorite = true
@@ -247,26 +258,11 @@ private val DUMMY_DETAIL = PhotoItem(
 @Composable
 fun DetailContentPreview() {
     PhotoCatalogTheme {
-        Scaffold(
-            topBar = {
-                @OptIn(ExperimentalMaterial3Api::class)
-                TopAppBar(
-                    title = { Text("Photo Catalog") },
-                    navigationIcon = {
-                        IconButton(onClick = {}) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                        }
-                    }
-                )
-            }
-        ) { padding ->
-            Box(modifier = Modifier.padding(padding)) {
-                PhotoDetailContent(
-                    item = DUMMY_DETAIL,
-                    onToggleFavorite = {},
-                    onImageClick = {}
-                )
-            }
-        }
+        PhotoDetailContent(
+            item = DUMMY_DETAIL,
+            onBackClick = {},
+            onToggleFavorite = {},
+            onImageClick = {}
+        )
     }
 }
