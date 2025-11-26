@@ -33,6 +33,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "BASE_URL", "\"https://marlove.net/e/mock/v1/\"")
+        }
+        debug {
+            buildConfigField("String", "BASE_URL", "\"https://marlove.net/e/mock/v1/\"")
         }
     }
     compileOptions {

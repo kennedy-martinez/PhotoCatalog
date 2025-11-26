@@ -1,5 +1,6 @@
 package com.portfolio.photocatalog.data.di
 
+import com.portfolio.photocatalog.data.BuildConfig
 import com.portfolio.photocatalog.data.network.ApiService
 import com.portfolio.photocatalog.data.network.AuthInterceptor
 import com.squareup.moshi.Moshi
@@ -17,8 +18,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    private const val BASE_URL = "https://marlove.net/e/mock/v1/"
-
     @Provides
     @Singleton
     fun provideMoshi(): Moshi {
@@ -44,7 +43,7 @@ object NetworkModule {
     @Singleton
     fun provideApiService(okHttpClient: OkHttpClient, moshi: Moshi): ApiService {
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(BuildConfig.BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
