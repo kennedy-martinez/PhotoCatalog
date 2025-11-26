@@ -106,7 +106,7 @@ fun DetailScreen(
 }
 
 @Composable
-private fun PhotoDetailContent(
+fun PhotoDetailContent(
     item: PhotoItem,
     onToggleFavorite: (PhotoItem) -> Unit,
     onImageClick: () -> Unit

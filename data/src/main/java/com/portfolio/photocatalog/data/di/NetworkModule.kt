@@ -2,7 +2,6 @@ package com.portfolio.photocatalog.data.di
 
 import com.portfolio.photocatalog.data.network.ApiService
 import com.portfolio.photocatalog.data.network.AuthInterceptor
-import com.portfolio.photocatalog.data.network.MockDataInterceptor
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -18,7 +17,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    private const val BASE_URL = "https://marlove.net/e/mock/vl/"
+    private const val BASE_URL = "https://marlove.net/e/mock/v1/"
 
     @Provides
     @Singleton
@@ -35,10 +34,7 @@ object NetworkModule {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
-        val mockInterceptor = MockDataInterceptor()
-
         return OkHttpClient.Builder()
-            .addInterceptor(mockInterceptor)
             .addInterceptor(authInterceptor)
             .addInterceptor(logging)
             .build()

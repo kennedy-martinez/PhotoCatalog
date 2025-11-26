@@ -2,8 +2,9 @@ package com.portfolio.photocatalog.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.portfolio.photocatalog.domain.model.PhotoItem
 import com.portfolio.photocatalog.data.network.model.PhotoDto
+import com.portfolio.photocatalog.data.util.sanitizeImageUrl
+import com.portfolio.photocatalog.domain.model.PhotoItem
 
 @Entity(tableName = "photos")
 data class PhotoEntity(
@@ -25,10 +26,11 @@ fun PhotoEntity.toDomain(): PhotoItem {
 }
 
 fun PhotoDto.toEntity(): PhotoEntity {
+
     return PhotoEntity(
         id = id,
         text = text ?: "",
-        url = url ?: "",
+        url = url.sanitizeImageUrl(),
         confidence = confidence ?: 0.0f,
         isFavorite = false
     )

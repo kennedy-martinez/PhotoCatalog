@@ -10,7 +10,7 @@ class AuthInterceptor @Inject constructor() : Interceptor {
         val originalRequest = chain.request()
 
         val newRequest = originalRequest.newBuilder()
-            .header("Authorization", "Bearer ${BuildConfig.API_KEY}")
+            .header("Authorization", BuildConfig.API_KEY)
             .build()
 
         return chain.proceed(newRequest)
