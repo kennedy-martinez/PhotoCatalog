@@ -36,7 +36,8 @@ class CatalogRepositoryImpl @Inject constructor(
             ),
             remoteMediator = PhotoRemoteMediator(
                 database = database,
-                apiService = apiService
+                apiService = apiService,
+                preferenceStorage = preferenceStorage
             ),
             pagingSourceFactory = pagingSourceFactory
         ).flow.map { pagingData ->

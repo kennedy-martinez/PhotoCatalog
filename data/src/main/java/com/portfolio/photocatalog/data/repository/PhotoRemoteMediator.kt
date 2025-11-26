@@ -6,6 +6,7 @@ import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
 import androidx.room.withTransaction
 import com.portfolio.photocatalog.data.local.AppDatabase
+import com.portfolio.photocatalog.data.local.PreferenceStorage
 import com.portfolio.photocatalog.data.local.entity.PhotoEntity
 import com.portfolio.photocatalog.data.local.entity.RemoteKeys
 import com.portfolio.photocatalog.data.local.entity.toEntity
@@ -16,7 +17,8 @@ import java.io.IOException
 @OptIn(ExperimentalPagingApi::class)
 class PhotoRemoteMediator(
     private val database: AppDatabase,
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val preferenceStorage: PreferenceStorage
 ) : RemoteMediator<Int, PhotoEntity>() {
 
     override suspend fun load(
@@ -60,7 +62,7 @@ class PhotoRemoteMediator(
                         }
                     }
                     database.photoDao().insertAll(entities)
-
+                    preferenceStorage.updateLastSyncTime(System.currentTimeMillis())
                 } else {
                     val prevKey = null
                     val nextKey = if (response.isEmpty()) null else response.last().id
