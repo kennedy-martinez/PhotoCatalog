@@ -8,16 +8,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -36,7 +37,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import coil.compose.AsyncImage
 import com.portfolio.photocatalog.R
 import com.portfolio.photocatalog.domain.model.PhotoItem
@@ -88,17 +89,11 @@ fun PhotoScreen(
                 viewModel.triggerVisualSync()
                 photos.refresh()
             },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier = Modifier.fillMaxSize().padding(paddingValues)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 if (photos.itemCount > 0) {
-                    PhotoList(
-                        photos = photos,
-                        onPhotoClick = onPhotoClick,
-                        onToggleFavorite = viewModel::onToggleFavorite
-                    )
+                    PhotoList(photos = photos, onPhotoClick = onPhotoClick)
                 }
 
                 if (photos.loadState.refresh is LoadState.Loading && photos.itemCount == 0) {
@@ -108,7 +103,7 @@ fun PhotoScreen(
                 if (photos.loadState.refresh is LoadState.Error && photos.itemCount == 0) {
                     val error = (photos.loadState.refresh as LoadState.Error).error
                     ErrorMessage(
-                        message = "Error loading data: ${error.localizedMessage ?: "Unknown error"}",
+                        message = "Error: ${error.localizedMessage}",
                         onRetry = { photos.retry() },
                         modifier = Modifier.align(Alignment.Center)
                     )
@@ -132,15 +127,11 @@ fun PhotoScreen(
                         } else {
                             formatDate(state.lastSyncTime)
                         }
-
                         StatusBanner(
                             message = stringResource(R.string.status_offline_format, dateText),
                             color = MaterialTheme.colorScheme.error,
                             showButton = true,
-                            onButtonClick = {
-                                viewModel.triggerVisualSync()
-                                photos.refresh()
-                            },
+                            onButtonClick = { viewModel.triggerVisualSync(); photos.refresh() },
                             modifier = Modifier.align(Alignment.BottomCenter)
                         )
                     }
@@ -149,10 +140,7 @@ fun PhotoScreen(
                             message = stringResource(R.string.status_online_format, state.lastUpdateMin, state.nextUpdateMin),
                             color = Color(0xFFFFA000),
                             showButton = true,
-                            onButtonClick = {
-                                viewModel.triggerVisualSync()
-                                photos.refresh()
-                            },
+                            onButtonClick = { viewModel.triggerVisualSync(); photos.refresh() },
                             modifier = Modifier.align(Alignment.BottomCenter)
                         )
                     }
@@ -177,27 +165,12 @@ fun ErrorMessage(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier.padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.Warning,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.error,
-            modifier = Modifier.size(48.dp)
-        )
+    Column(modifier = modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Icon(imageVector = Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center
-        )
+        Text(text = message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
         Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onRetry) {
-            Text("Retry")
-        }
+        Button(onClick = onRetry) { Text("Retry") }
     }
 }
 
@@ -210,44 +183,16 @@ fun StatusBanner(
     isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        color = color,
-        modifier = modifier.fillMaxWidth()
-    ) {
+    Surface(color = color, modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.fillMaxWidth()) {
             if (isLoading) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color.White,
-                    trackColor = color,
-                    strokeCap = StrokeCap.Square
-                )
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Color.White, trackColor = color, strokeCap = StrokeCap.Square)
             }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = message,
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.weight(1f)
-                )
-
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(text = message, color = Color.White, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
                 if (showButton) {
-                    IconButton(
-                        onClick = onButtonClick,
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = stringResource(R.string.cd_force_sync),
-                            tint = Color.White
-                        )
+                    IconButton(onClick = onButtonClick, modifier = Modifier.size(24.dp)) {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_force_sync), tint = Color.White)
                     }
                 }
             }
@@ -258,32 +203,28 @@ fun StatusBanner(
 @Composable
 fun PhotoList(
     photos: LazyPagingItems<PhotoItem>,
-    onPhotoClick: (String) -> Unit,
-    onToggleFavorite: (PhotoItem) -> Unit
+    onPhotoClick: (String) -> Unit
 ) {
-    LazyColumn(
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 120.dp),
         contentPadding = PaddingValues(bottom = 80.dp, top = 16.dp, start = 16.dp, end = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        items(count = photos.itemCount) { index ->
+        items(
+            count = photos.itemCount,
+            key = photos.itemKey { it.id },
+            contentType = { "PhotoItem" }
+        ) { index ->
             val item = photos[index]
             if (item != null) {
-                PhotoItemCard(
-                    item = item,
-                    onPhotoClick = onPhotoClick,
-                    onToggleFavorite = onToggleFavorite
-                )
+                PhotoItemCard(item = item, onPhotoClick = onPhotoClick)
             }
         }
 
         if (photos.loadState.append is LoadState.Loading) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
@@ -294,8 +235,7 @@ fun PhotoList(
 @Composable
 fun PhotoItemCard(
     item: PhotoItem,
-    onPhotoClick: (String) -> Unit,
-    onToggleFavorite: (PhotoItem) -> Unit
+    onPhotoClick: (String) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -303,51 +243,18 @@ fun PhotoItemCard(
             .clickable { onPhotoClick(item.id) },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             AsyncImage(
                 model = item.imageUrl,
                 contentDescription = stringResource(R.string.cd_photo_image),
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(Color.LightGray),
+                modifier = Modifier.fillMaxWidth().aspectRatio(1f).background(Color.LightGray),
                 contentScale = ContentScale.Crop
             )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = item.description,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+            Column(modifier = Modifier.padding(8.dp)) {
+                Text(text = item.description, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.label_confidence, item.confidence),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = stringResource(R.string.label_id, item.id),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }
-
-            IconButton(onClick = { onToggleFavorite(item) }) {
-                Icon(
-                    imageVector = if (item.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = stringResource(R.string.cd_favorite),
-                    tint = if (item.isFavorite) Color.Red else Color.Gray
-                )
+                Text(text = stringResource(R.string.label_confidence, item.confidence), style = MaterialTheme.typography.labelSmall)
+                Text(text = stringResource(R.string.label_id, item.id), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
             }
         }
     }
@@ -355,75 +262,4 @@ fun PhotoItemCard(
 
 private fun formatDate(timestamp: Long): String {
     return SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(timestamp))
-}
-
-private val DUMMY_PHOTO = PhotoItem(
-    id = "101",
-    description = "Mountain Landscape",
-    imageUrl = "",
-    confidence = 0.98f,
-    isFavorite = false
-)
-
-@Preview(showBackground = true, name = "1. Card Item")
-@Composable
-fun PhotoItemCardPreview() {
-    PhotoCatalogTheme {
-        PhotoItemCard(item = DUMMY_PHOTO, onPhotoClick = {}, onToggleFavorite = {})
-    }
-}
-
-@Preview(showBackground = true, name = "2. Error State")
-@Composable
-fun ErrorStatePreview() {
-    PhotoCatalogTheme {
-        ErrorMessage(
-            message = "HTTP 401 Unauthorized",
-            onRetry = {}
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Preview(showBackground = true, name = "3. Full List with Banner")
-@Composable
-fun PhotoListPreview() {
-    val fakePhotos = listOf(
-        DUMMY_PHOTO,
-        DUMMY_PHOTO.copy(id = "103", description = "Urban Street"),
-        DUMMY_PHOTO.copy(id = "104", description = "Abstract Art")
-    )
-
-    PhotoCatalogTheme {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.app_name)) }
-                )
-            }
-        ) { padding ->
-            Box(modifier = Modifier.padding(padding)) {
-                LazyColumn(
-                    contentPadding = PaddingValues(bottom = 80.dp, top = 16.dp, start = 16.dp, end = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(fakePhotos.size) { index ->
-                        PhotoItemCard(
-                            item = fakePhotos[index],
-                            onPhotoClick = {},
-                            onToggleFavorite = {}
-                        )
-                    }
-                }
-
-                StatusBanner(
-                    message = "Last update: 5 min ago. Next auto-sync in: 55 min",
-                    color = Color(0xFFFFA000),
-                    showButton = true,
-                    onButtonClick = {},
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
-            }
-        }
-    }
 }

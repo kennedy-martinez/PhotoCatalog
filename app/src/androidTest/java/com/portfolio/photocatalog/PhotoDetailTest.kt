@@ -21,8 +21,7 @@ class PhotoDetailTest {
         id = "999",
         description = "Test Detail Description",
         imageUrl = "https://example.com/image.png",
-        confidence = 0.123f,
-        isFavorite = false
+        confidence = 0.123f
     )
 
     @Test
@@ -31,9 +30,7 @@ class PhotoDetailTest {
             PhotoCatalogTheme {
                 PhotoDetailContent(
                     item = testItem,
-                    onBackClick = {},
-                    onToggleFavorite = {},
-                    onImageClick = {}
+                    onBackClick = {}
                 )
             }
         }
@@ -50,9 +47,7 @@ class PhotoDetailTest {
             PhotoCatalogTheme {
                 PhotoDetailContent(
                     item = testItem,
-                    onBackClick = { backClicked = true },
-                    onToggleFavorite = {},
-                    onImageClick = {}
+                    onBackClick = { backClicked = true }
                 )
             }
         }
@@ -67,9 +62,7 @@ class PhotoDetailTest {
             PhotoCatalogTheme {
                 PhotoDetailContent(
                     item = testItem,
-                    onBackClick = {},
-                    onToggleFavorite = {},
-                    onImageClick = {}
+                    onBackClick = {}
                 )
             }
         }
@@ -79,25 +72,5 @@ class PhotoDetailTest {
         composeTestRule.onNodeWithContentDescription("Close").assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription("Close").performClick()
         composeTestRule.onNodeWithContentDescription("Close").assertDoesNotExist()
-    }
-
-    @Test
-    fun favoriteButton_toggles() {
-        var favClicked = false
-
-        composeTestRule.setContent {
-            PhotoCatalogTheme {
-                PhotoDetailContent(
-                    item = testItem,
-                    onBackClick = {},
-                    onToggleFavorite = { favClicked = true },
-                    onImageClick = {}
-                )
-            }
-        }
-        composeTestRule.onNodeWithContentDescription("Mark as favorite", ignoreCase = true)
-            .performClick()
-
-        assertTrue(favClicked)
     }
 }

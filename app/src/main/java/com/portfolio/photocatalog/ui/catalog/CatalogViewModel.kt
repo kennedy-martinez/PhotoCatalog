@@ -9,25 +9,26 @@ import androidx.work.WorkManager
 import com.portfolio.photocatalog.data.local.PreferenceStorage
 import com.portfolio.photocatalog.data.network.NetworkMonitor
 import com.portfolio.photocatalog.data.worker.SyncWorker
-import com.portfolio.photocatalog.domain.model.PhotoItem
 import com.portfolio.photocatalog.domain.model.SyncStatus
 import com.portfolio.photocatalog.domain.usecase.GetPhotoStreamUseCase
 import com.portfolio.photocatalog.domain.usecase.GetSyncStatusUseCase
-import com.portfolio.photocatalog.domain.usecase.ToggleFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @HiltViewModel
 class CatalogViewModel @Inject constructor(
     getPhotoStreamUseCase: GetPhotoStreamUseCase,
-    private val toggleFavoriteUseCase: ToggleFavoriteUseCase,
     private val getSyncStatusUseCase: GetSyncStatusUseCase,
     networkMonitor: NetworkMonitor,
     private val preferenceStorage: PreferenceStorage,
@@ -37,7 +38,7 @@ class CatalogViewModel @Inject constructor(
     val photoPagingFlow = getPhotoStreamUseCase()
         .cachedIn(viewModelScope)
 
-    private val _isVisualSyncing = kotlinx.coroutines.flow.MutableStateFlow(false)
+    private val _isVisualSyncing = MutableStateFlow(false)
 
     val bannerState = combine(
         networkMonitor.isOnline,
@@ -57,12 +58,6 @@ class CatalogViewModel @Inject constructor(
         initialValue = BannerUiState.Hidden
     )
 
-    fun onToggleFavorite(photo: PhotoItem) {
-        viewModelScope.launch {
-            toggleFavoriteUseCase(photo)
-        }
-    }
-
     fun forceSync() {
         val request = OneTimeWorkRequestBuilder<SyncWorker>().build()
         workManager.enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, request)
@@ -80,20 +75,13 @@ class CatalogViewModel @Inject constructor(
     private fun mapToUiState(status: SyncStatus): BannerUiState {
         return when (status) {
             is SyncStatus.NeverSynced -> BannerUiState.Hidden
-
             is SyncStatus.Offline -> BannerUiState.Offline(status.lastSyncTime)
-
             is SyncStatus.DataIsFresh -> BannerUiState.Updated
-
             is SyncStatus.DataIsStale -> {
                 val now = System.currentTimeMillis()
                 val diffMinutes = TimeUnit.MILLISECONDS.toMinutes(now - status.lastSyncTime)
                 val nextUpdateMinutes = SYNC_INTERVAL_MINUTES - diffMinutes
-
-                BannerUiState.Online(
-                    lastUpdateMin = diffMinutes,
-                    nextUpdateMin = maxOf(0, nextUpdateMinutes)
-                )
+                BannerUiState.Online(diffMinutes, maxOf(0, nextUpdateMinutes))
             }
         }
     }

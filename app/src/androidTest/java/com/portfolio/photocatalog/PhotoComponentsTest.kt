@@ -3,14 +3,12 @@ package com.portfolio.photocatalog
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.paging.PagingData
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.portfolio.photocatalog.domain.model.PhotoItem
 import com.portfolio.photocatalog.ui.catalog.ErrorMessage
-import com.portfolio.photocatalog.ui.catalog.PhotoItemCard
 import com.portfolio.photocatalog.ui.catalog.PhotoList
 import com.portfolio.photocatalog.ui.catalog.StatusBanner
 import com.portfolio.photocatalog.ui.detail.PhotoDetailContent
@@ -24,54 +22,6 @@ class PhotoComponentsTest {
 
     @get:Rule
     val composeTestRule = createComposeRule()
-
-    @Test
-    fun photoItemCard_showsFilledHeart_whenFavorite() {
-        val favoriteItem = PhotoItem(
-            id = "1",
-            description = "Test Favorite",
-            imageUrl = "",
-            confidence = 1.0f,
-            isFavorite = true
-        )
-
-        composeTestRule.setContent {
-            PhotoCatalogTheme {
-                PhotoItemCard(
-                    item = favoriteItem,
-                    onPhotoClick = {},
-                    onToggleFavorite = {}
-                )
-            }
-        }
-
-        composeTestRule.onNodeWithContentDescription("Mark as Favorite")
-            .assertIsDisplayed()
-    }
-
-    @Test
-    fun photoItemCard_showsBorderHeart_whenNotFavorite() {
-        val normalItem = PhotoItem(
-            id = "1",
-            description = "Test Normal",
-            imageUrl = "",
-            confidence = 1.0f,
-            isFavorite = false
-        )
-
-        composeTestRule.setContent {
-            PhotoCatalogTheme {
-                PhotoItemCard(
-                    item = normalItem,
-                    onPhotoClick = {},
-                    onToggleFavorite = {}
-                )
-            }
-        }
-
-        composeTestRule.onNodeWithContentDescription("Mark as Favorite")
-            .assertIsDisplayed()
-    }
 
     @Test
     fun photoList_displaysItems_correctly() {
@@ -88,8 +38,7 @@ class PhotoComponentsTest {
             PhotoCatalogTheme {
                 PhotoList(
                     photos = lazyPagingItems,
-                    onPhotoClick = {},
-                    onToggleFavorite = {}
+                    onPhotoClick = {}
                 )
             }
         }
@@ -112,8 +61,7 @@ class PhotoComponentsTest {
             PhotoCatalogTheme {
                 PhotoList(
                     photos = lazyPagingItems,
-                    onPhotoClick = { clickedId = it },
-                    onToggleFavorite = {}
+                    onPhotoClick = { clickedId = it }
                 )
             }
         }
@@ -136,8 +84,6 @@ class PhotoComponentsTest {
             PhotoCatalogTheme {
                 PhotoDetailContent(
                     item = detailItem,
-                    onToggleFavorite = {},
-                    onImageClick = {},
                     onBackClick = {}
                 )
             }

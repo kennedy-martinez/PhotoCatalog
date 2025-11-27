@@ -12,7 +12,6 @@ data class PhotoEntity(
     val text: String,
     val url: String,
     val confidence: Float,
-    val isFavorite: Boolean = false
 )
 
 fun PhotoEntity.toDomain(): PhotoItem {
@@ -20,8 +19,7 @@ fun PhotoEntity.toDomain(): PhotoItem {
         id = id,
         description = text,
         imageUrl = url,
-        confidence = confidence,
-        isFavorite = isFavorite
+        confidence = confidence
     )
 }
 
@@ -31,7 +29,6 @@ fun PhotoDto.toEntity(): PhotoEntity {
         id = id,
         text = text ?: "",
         url = url.sanitizeImageUrl(),
-        confidence = confidence ?: 0.0f,
-        isFavorite = false
+        confidence = confidence ?: 0.0f
     )
 }

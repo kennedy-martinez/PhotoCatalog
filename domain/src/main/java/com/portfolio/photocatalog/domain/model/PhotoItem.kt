@@ -4,6 +4,5 @@ data class PhotoItem(
     val id: String,
     val description: String,
     val imageUrl: String,
-    val confidence: Float,
-    val isFavorite: Boolean = false
+    val confidence: Float
 )

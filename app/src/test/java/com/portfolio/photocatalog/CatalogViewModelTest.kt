@@ -6,14 +6,11 @@ import androidx.work.WorkManager
 import app.cash.turbine.test
 import com.portfolio.photocatalog.data.local.PreferenceStorage
 import com.portfolio.photocatalog.data.network.NetworkMonitor
-import com.portfolio.photocatalog.domain.model.PhotoItem
 import com.portfolio.photocatalog.domain.model.SyncStatus
 import com.portfolio.photocatalog.domain.usecase.GetPhotoStreamUseCase
 import com.portfolio.photocatalog.domain.usecase.GetSyncStatusUseCase
-import com.portfolio.photocatalog.domain.usecase.ToggleFavoriteUseCase
 import com.portfolio.photocatalog.ui.catalog.BannerUiState
 import com.portfolio.photocatalog.ui.catalog.CatalogViewModel
-import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -35,7 +32,6 @@ import org.junit.Test
 class CatalogViewModelTest {
 
     private val getPhotoStreamUseCase: GetPhotoStreamUseCase = mockk(relaxed = true)
-    private val toggleFavoriteUseCase: ToggleFavoriteUseCase = mockk(relaxed = true)
     private val getSyncStatusUseCase: GetSyncStatusUseCase = mockk()
     private val networkMonitor: NetworkMonitor = mockk()
     private val preferenceStorage: PreferenceStorage = mockk()
@@ -126,21 +122,9 @@ class CatalogViewModelTest {
         }
     }
 
-    @Test
-    fun `onToggleFavorite calls UseCase`() = runTest(testDispatcher) {
-        viewModel = createViewModel()
-        val photo = PhotoItem("1", "Test", "", 0f)
-
-        viewModel.onToggleFavorite(photo)
-        advanceTimeBy(100)
-
-        coVerify { toggleFavoriteUseCase(photo) }
-    }
-
     private fun createViewModel(): CatalogViewModel {
         return CatalogViewModel(
             getPhotoStreamUseCase,
-            toggleFavoriteUseCase,
             getSyncStatusUseCase,
             networkMonitor,
             preferenceStorage,

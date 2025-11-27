@@ -41,48 +41,23 @@ class PhotoRemoteMediator(
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
-                    val favoriteIds = database.photoDao().getFavoriteIds().toSet()
-
                     database.remoteKeysDao().clearRemoteKeys()
                     database.photoDao().clearAll()
-
-                    val prevKey = null
-                    val nextKey = if (response.isEmpty()) null else response.last().id
-                    val keys = response.map { photo ->
-                        RemoteKeys(photoId = photo.id, prevKey = prevKey, nextKey = nextKey)
-                    }
-                    database.remoteKeysDao().insertAll(keys)
-
-                    val entities = response.map { dto ->
-                        val entity = dto.toEntity()
-                        if (favoriteIds.contains(entity.id)) {
-                            entity.copy(isFavorite = true)
-                        } else {
-                            entity
-                        }
-                    }
-                    database.photoDao().insertAll(entities)
                     preferenceStorage.updateLastSyncTime(System.currentTimeMillis())
-                } else {
-                    val prevKey = null
-                    val nextKey = if (response.isEmpty()) null else response.last().id
-                    val keys = response.map { photo ->
-                        RemoteKeys(photoId = photo.id, prevKey = prevKey, nextKey = nextKey)
-                    }
-
-                    val favoriteIds = database.photoDao().getFavoriteIds().toSet()
-                    val entities = response.map { dto ->
-                        val entity = dto.toEntity()
-                        if (favoriteIds.contains(entity.id)) entity.copy(isFavorite = true) else entity
-                    }
-
-                    database.remoteKeysDao().insertAll(keys)
-                    database.photoDao().insertAll(entities)
                 }
+
+                val prevKey = null
+                val nextKey = if (response.isEmpty()) null else response.last().id
+                val keys = response.map { photo ->
+                    RemoteKeys(photoId = photo.id, prevKey = prevKey, nextKey = nextKey)
+                }
+                val entities = response.map { it.toEntity() }
+
+                database.remoteKeysDao().insertAll(keys)
+                database.photoDao().insertAll(entities)
             }
 
             MediatorResult.Success(endOfPaginationReached = response.isEmpty())
-
         } catch (e: IOException) {
             MediatorResult.Error(e)
         } catch (e: HttpException) {

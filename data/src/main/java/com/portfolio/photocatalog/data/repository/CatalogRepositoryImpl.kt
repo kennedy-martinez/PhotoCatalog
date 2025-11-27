@@ -27,32 +27,17 @@ class CatalogRepositoryImpl @Inject constructor(
 
     @OptIn(ExperimentalPagingApi::class)
     override fun getPhotoStream(): Flow<PagingData<PhotoItem>> {
-        val pagingSourceFactory = { database.photoDao().getPhotos() }
-
         return Pager(
-            config = PagingConfig(
-                pageSize = ITEMS_PER_PAGE,
-                enablePlaceholders = false
-            ),
-            remoteMediator = PhotoRemoteMediator(
-                database = database,
-                apiService = apiService,
-                preferenceStorage = preferenceStorage
-            ),
-            pagingSourceFactory = pagingSourceFactory
+            config = PagingConfig(pageSize = ITEMS_PER_PAGE, enablePlaceholders = false),
+            remoteMediator = PhotoRemoteMediator(database, apiService, preferenceStorage),
+            pagingSourceFactory = { database.photoDao().getPhotos() }
         ).flow.map { pagingData ->
             pagingData.map { it.toDomain() }
         }
     }
 
     override fun getPhotoDetail(photoId: String): Flow<PhotoItem?> {
-        return database.photoDao().getPhotoById(photoId).map { entity ->
-            entity?.toDomain()
-        }
-    }
-
-    override suspend fun toggleFavorite(photoId: String, isFavorite: Boolean) {
-        database.photoDao().updateFavoriteStatus(photoId, isFavorite)
+        return database.photoDao().getPhotoById(photoId).map { it?.toDomain() }
     }
 
     override suspend fun refreshAllContent(): Result<Unit> {
@@ -74,24 +59,12 @@ class CatalogRepositoryImpl @Inject constructor(
 
             if (allPhotos.isNotEmpty()) {
                 database.withTransaction {
-                    val favoriteIds = database.photoDao().getFavoriteIds().toSet()
-
+                    database.remoteKeysDao().clearRemoteKeys()
                     database.photoDao().clearAll()
-
-                    val entities = allPhotos.map { dto ->
-                        val entity = dto.toEntity()
-                        if (favoriteIds.contains(entity.id)) {
-                            entity.copy(isFavorite = true)
-                        } else {
-                            entity
-                        }
-                    }
-
-                    database.photoDao().insertAll(entities)
+                    database.photoDao().insertAll(allPhotos.map { it.toEntity() })
                 }
                 preferenceStorage.updateLastSyncTime(System.currentTimeMillis())
             }
-
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e)

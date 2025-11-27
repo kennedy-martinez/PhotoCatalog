@@ -8,7 +8,6 @@ import com.portfolio.photocatalog.data.local.entity.RemoteKeys
 
 @Dao
 interface RemoteKeysDao {
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(remoteKey: List<RemoteKeys>)
 
